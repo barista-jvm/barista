@@ -31,7 +31,11 @@ if [ ! -d "$versions_dir" ]; then
   exit 0
 fi
 
-current_version="$(barista-serving --bare 2>/dev/null || echo "")"
+# Resolve the active version and its origin from barista-serving so that
+# all precedence layers (BARISTA_VERSION, .java-version, global file) are
+# correctly reflected in the active-version marker line.
+current_serving="$(barista-serving 2>/dev/null || true)"
+current_version="${current_serving%% *}"
 
 shopt -s nullglob
 found=0
@@ -45,7 +49,7 @@ for version_dir in "${versions_dir}"/*/; do
   if [ -n "$bare" ]; then
     echo "$version"
   elif [ "$version" = "$current_version" ]; then
-    echo "* $version (set by $(barista-version-file))"
+    echo "* ${current_serving}"
   else
     echo "  $version"
   fi
