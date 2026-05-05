@@ -69,12 +69,16 @@ if [ -n "$list_only" ]; then
     echo "barista: failed to fetch version list" >&2
     exit 1
   }
+  # The API returns pretty-printed JSON with arrays spanning multiple lines.
+  # Collapse to a single line so grep can match across the full array literal.
+  flat="$(echo "$releases" | tr -d '\n')"
+
   echo "LTS versions:"
-  echo "$releases" | grep -oE '"available_lts_releases":\[[^]]*\]' \
+  echo "$flat" | grep -oE '"available_lts_releases": *\[[^]]*\]' \
     | grep -oE '[0-9]+' | while read -r v; do printf "  %s\n" "$v"; done
   echo
   echo "All feature versions:"
-  echo "$releases" | grep -oE '"available_releases":\[[^]]*\]' \
+  echo "$flat" | grep -oE '"available_releases": *\[[^]]*\]' \
     | grep -oE '[0-9]+' | while read -r v; do printf "  %s\n" "$v"; done
   exit 0
 fi
