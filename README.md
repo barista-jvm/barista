@@ -22,7 +22,7 @@ Installed JDKs live under `$BARISTA_ROOT/versions/` (default: `~/.barista/versio
 ## Installation
 
 ```bash
-git clone https://github.com/your-org/barista.git ~/.barista/barista
+git clone https://github.com/barista-jvm/barista.git ~/.barista/barista
 
 # Add to ~/.zshrc or ~/.bashrc:
 export PATH="$HOME/.barista/barista/bin:$PATH"
@@ -175,51 +175,6 @@ barista help brew            # full usage for a specific command
 ```bash
 barista --version            # barista 0.1.0
 ```
-
----
-
-## Environment variables
-
-| Variable | Default | Description |
-|---|---|---|
-| `BARISTA_ROOT` | `~/.barista` | Root directory for versions and shims |
-| `BARISTA_VERSION` | — | Shell-level version override (`barista session`) |
-| `BARISTA_DEBUG` | — | Set to any value to enable `set -x` tracing |
-
----
-
-## Project layout
-
-```
-barista/
-├── bin/
-│   └── barista               # entry point (symlink → execs/barista)
-└── execs/
-    ├── barista               # main dispatcher
-    ├── barista---version
-    ├── barista-brew
-    ├── barista-commands
-    ├── barista-counter
-    ├── barista-discard
-    ├── barista-help
-    ├── barista-house
-    ├── barista-menu
-    ├── barista-origin
-    ├── barista-pantry
-    ├── barista-pour
-    ├── barista-restock
-    ├── barista-serving
-    ├── barista-session
-    ├── barista-setup
-    ├── barista-sh-session    # shell function helper for session
-    ├── barista-sh-table      # shell function helper for table
-    ├── barista-table
-    ├── barista-version-file
-    ├── barista-version-file-read
-    └── barista-version-file-write
-```
-
-Each file under `execs/` is a standalone executable script. The dispatcher routes `barista <command>` to `barista-<command>` by adding `execs/` to `PATH`.
 
 ---
 
