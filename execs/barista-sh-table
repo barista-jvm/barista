@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# Summary: Shell function variant of 'barista table' (used by shell integration)
+# Usage: barista sh-table [<args>]
+#
+# Writes the version file and then emits shell code to clear any overriding
+# BARISTA_VERSION variable so the new .java-version takes effect immediately.
+
+set -e
+[ -n "$BARISTA_DEBUG" ] && set -x
+
+shell="${BARISTA_SHELL:-bash}"
+
+barista-table "$@" || { echo "false"; exit 1; }
+
+case "$shell" in
+fish ) echo "set -e BARISTA_VERSION" ;;
+*    ) printf 'unset BARISTA_VERSION\nhash -r 2>/dev/null || true\n' ;;
+esac

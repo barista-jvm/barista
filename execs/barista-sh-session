@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Summary: Shell function variant of 'barista session' (used by shell integration)
+# Usage: barista sh-session [<version>]
+#
+# Emits shell code that sets or unsets BARISTA_VERSION in the calling shell,
+# then invalidates the command hash table so the new shims take effect.
+
+set -e
+[ -n "$BARISTA_DEBUG" ] && set -x
+
+shell="${BARISTA_SHELL:-bash}"
+
+result="$(barista-session "$@")" || { echo "false"; exit 1; }
+
+echo "$result"
+case "$shell" in
+fish ) ;;
+*    ) echo "hash -r 2>/dev/null || true" ;;
+esac

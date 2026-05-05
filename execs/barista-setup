@@ -1,0 +1,103 @@
+#!/usr/bin/env bash
+# Summary: Configure shell integration for barista
+# Usage: barista setup [-|--path] [--no-push-path] [--detect-shell] [--no-rehash] [<shell>]
+#
+# Emits shell code that integrates barista with your shell. Add to .zshrc/.bashrc:
+#
+#   eval "$(barista setup -)"
+#
+# This sets up PATH (shims + barista bin), defines the barista() shell function
+# so that 'barista session' and 'barista table' can modify the calling shell's
+# environment, and optionally rehashes shims on startup.
+#
+# Flags:
+#   -  / --path        Only configure PATH; skip shell function setup
+#   --no-push-path     Don't prepend shims directory to PATH
+#   --detect-shell     Auto-detect the current shell from the process tree
+#   --no-rehash        Skip rehashing shims on shell startup
+#
+# Supported shells: bash, zsh, fish
+
+set -e
+[ -n "$BARISTA_DEBUG" ] && set -x
+
+export BARISTA_ROOT="${BARISTA_ROOT:-$HOME/.barista}"
+
+path_only=""
+no_push_path=""
+no_rehash=""
+shell_name=""
+
+for arg in "$@"; do
+  case "$arg" in
+  - | --path     ) path_only=1 ;;
+  --no-push-path ) no_push_path=1 ;;
+  --no-rehash    ) no_rehash=1 ;;
+  --detect-shell )
+    shell_name="$(ps -p "$PPID" -o comm= 2>/dev/null \
+                  | sed 's|^-||;s|.*/||')" ;;
+  bash | zsh | fish | ksh ) shell_name="$arg" ;;
+  esac
+done
+
+shell_name="${shell_name:-bash}"
+
+# --- PATH setup ---
+
+case "$shell_name" in
+fish )
+  if [ -z "$no_push_path" ]; then
+    echo "set -gx PATH \"${BARISTA_ROOT}/shims\" \$PATH"
+  fi
+  echo "set -gx BARISTA_ROOT \"${BARISTA_ROOT}\""
+  ;;
+* )
+  if [ -z "$no_push_path" ]; then
+    echo "export PATH=\"${BARISTA_ROOT}/shims:\${PATH}\""
+  fi
+  echo "export BARISTA_ROOT=\"${BARISTA_ROOT}\""
+  ;;
+esac
+
+[ -n "$path_only" ] && exit 0
+
+# --- Shell function ---
+
+case "$shell_name" in
+fish )
+  cat <<'FISH'
+
+function barista
+  set cmd $argv[1]
+  set -e argv[1]
+  switch $cmd
+    case session table
+      eval (command barista sh-$cmd $argv)
+    case '*'
+      command barista $cmd $argv
+  end
+end
+FISH
+  if [ -z "$no_rehash" ]; then
+    echo "command barista restock 2>/dev/null; or true"
+  fi
+  ;;
+* )
+  cat <<'SH'
+
+barista() {
+  local command="$1"
+  [ $# -gt 0 ] && shift
+  case "$command" in
+  session | table )
+    eval "$(command barista "sh-${command}" "$@")" ;;
+  * )
+    command barista "$command" "$@" ;;
+  esac
+}
+SH
+  if [ -z "$no_rehash" ]; then
+    echo "command barista restock 2>/dev/null || true"
+  fi
+  ;;
+esac

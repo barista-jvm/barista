@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+# Summary: Set or show the global Java version (the house blend)
+# Usage: barista house [<version>...]
+#
+# Sets the global Java version by writing to $BARISTA_ROOT/version.
+# Without arguments, prints the current global version.
+# Use "system" to fall back to the OS-installed Java.
+#
+# Examples:
+#   barista house           # show global version
+#   barista house 21        # set global version to 21
+#   barista house system    # reset to system Java
+
+set -e
+[ -n "$BARISTA_DEBUG" ] && set -x
+
+export BARISTA_ROOT="${BARISTA_ROOT:-$HOME/.barista}"
+
+global_version_file="${BARISTA_ROOT}/version"
+
+if [ $# -eq 0 ]; then
+  if [ -f "$global_version_file" ]; then
+    barista-version-file-read "$global_version_file"
+  else
+    echo "system"
+  fi
+  exit 0
+fi
+
+for version in "$@"; do
+  if [ "$version" != "system" ]; then
+    version_dir="${BARISTA_ROOT}/versions/${version}"
+    if [ ! -d "$version_dir" ]; then
+      echo "barista: version '${version}' not installed" >&2
+      echo "        Run 'barista brew ${version}' to install it." >&2
+      exit 1
+    fi
+  fi
+done
+
+mkdir -p "$BARISTA_ROOT"
+barista-version-file-write "$global_version_file" "$*"

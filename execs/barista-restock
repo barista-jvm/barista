@@ -1,0 +1,95 @@
+#!/usr/bin/env bash
+# Summary: Regenerate barista shims after installing new Java versions
+# Usage: barista restock
+#
+# Creates a shim script in $BARISTA_ROOT/shims/ for every executable found
+# across all installed Java versions. Run this after installing or discarding
+# a Java version.
+#
+# Shims intercept tool calls (java, javac, mvn, …) and forward them to the
+# correct versioned binary based on the active BARISTA_VERSION, .java-version,
+# or the global house version.
+
+set -e
+[ -n "$BARISTA_DEBUG" ] && set -x
+
+export BARISTA_ROOT="${BARISTA_ROOT:-$HOME/.barista}"
+
+shims_dir="${BARISTA_ROOT}/shims"
+versions_dir="${BARISTA_ROOT}/versions"
+
+mkdir -p "$shims_dir"
+
+# Clear stale shims
+find "$shims_dir" -maxdepth 1 -type f -delete 2>/dev/null || true
+
+if [ ! -d "$versions_dir" ]; then
+  exit 0
+fi
+
+make_shim() {
+  local program="$1"
+  cat > "${shims_dir}/${program}" <<'SHIM'
+#!/usr/bin/env bash
+set -e
+export BARISTA_ROOT="${BARISTA_ROOT:-$HOME/.barista}"
+program="${0##*/}"
+
+# Resolve active version using the same precedence as barista-serving
+version=""
+
+if [ -n "$BARISTA_VERSION" ]; then
+  version="$BARISTA_VERSION"
+else
+  search_dir="$PWD"
+  while true; do
+    if [ -f "${search_dir}/.java-version" ]; then
+      version="$(grep -v '^#' "${search_dir}/.java-version" | head -1 | tr -d '[:space:]')"
+      break
+    fi
+    [ "$search_dir" = "/" ] && break
+    search_dir="${search_dir%/*}"
+    [ -z "$search_dir" ] && search_dir="/"
+  done
+fi
+
+if [ -z "$version" ] && [ -f "${BARISTA_ROOT}/version" ]; then
+  version="$(grep -v '^#' "${BARISTA_ROOT}/version" | head -1 | tr -d '[:space:]')"
+fi
+
+if [ -z "$version" ] || [ "$version" = "system" ]; then
+  # Strip barista shims from PATH to reach the real system binary
+  clean_path="$(echo "$PATH" | tr ':' '\n' \
+    | grep -v "${BARISTA_ROOT}/shims" | tr '\n' ':' | sed 's/:$//')"
+  exec env PATH="$clean_path" "$program" "$@"
+fi
+
+exec "${BARISTA_ROOT}/versions/${version}/bin/${program}" "$@"
+SHIM
+  chmod +x "${shims_dir}/${program}"
+}
+
+shopt -s nullglob
+
+# Collect unique executable names across all installed versions,
+# then create one shim per name. Use a temp file to deduplicate
+# so this works with bash 3.2 (macOS default).
+exe_list="$(mktemp)"
+trap 'rm -f "$exe_list"' EXIT
+
+for version_dir in "${versions_dir}"/*/; do
+  bin_dir="${version_dir}bin"
+  [ -d "$bin_dir" ] || continue
+  for exec_file in "${bin_dir}"/*; do
+    [ -x "$exec_file" ] || continue
+    echo "${exec_file##*/}"
+  done
+done | sort -u > "$exe_list"
+
+shim_count=0
+while IFS= read -r exe; do
+  make_shim "$exe"
+  shim_count=$((shim_count + 1))
+done < "$exe_list"
+
+echo "barista: restocked ${shim_count} shim(s) in ${shims_dir}"

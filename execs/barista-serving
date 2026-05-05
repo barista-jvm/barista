@@ -1,0 +1,74 @@
+#!/usr/bin/env bash
+# Summary: Show the current Java version being served and its origin
+# Usage: barista serving [--bare]
+#
+# Displays the currently active Java version and how it was determined.
+#
+# Version precedence (highest to lowest):
+#   1. BARISTA_VERSION environment variable  (barista session)
+#   2. Local .java-version file              (barista table)
+#   3. Global $BARISTA_ROOT/version file     (barista house)
+#   4. system
+#
+# Flags:
+#   --bare  Show only the version name, no origin info
+
+set -e
+[ -n "$BARISTA_DEBUG" ] && set -x
+
+export BARISTA_ROOT="${BARISTA_ROOT:-$HOME/.barista}"
+
+bare=""
+for arg in "$@"; do
+  case "$arg" in
+  --bare ) bare=1 ;;
+  esac
+done
+
+version=""
+origin=""
+
+# 1. BARISTA_VERSION env var
+if [ -n "$BARISTA_VERSION" ]; then
+  version="$BARISTA_VERSION"
+  origin="BARISTA_VERSION environment variable"
+fi
+
+# 2. Walk up from CWD looking for .java-version
+if [ -z "$version" ]; then
+  search_dir="$PWD"
+  while true; do
+    if [ -f "${search_dir}/.java-version" ]; then
+      v="$(barista-version-file-read "${search_dir}/.java-version" 2>/dev/null || true)"
+      if [ -n "$v" ]; then
+        version="$v"
+        origin="${search_dir}/.java-version"
+        break
+      fi
+    fi
+    [ "$search_dir" = "/" ] && break
+    search_dir="${search_dir%/*}"
+    [ -z "$search_dir" ] && search_dir="/"
+  done
+fi
+
+# 3. Global version file
+if [ -z "$version" ] && [ -f "${BARISTA_ROOT}/version" ]; then
+  v="$(barista-version-file-read "${BARISTA_ROOT}/version" 2>/dev/null || true)"
+  if [ -n "$v" ]; then
+    version="$v"
+    origin="${BARISTA_ROOT}/version"
+  fi
+fi
+
+# 4. Fall back to system
+if [ -z "$version" ]; then
+  version="system"
+  origin="default (system)"
+fi
+
+if [ -n "$bare" ]; then
+  echo "$version"
+else
+  echo "$version (set by $origin)"
+fi

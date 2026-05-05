@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# Summary: Run a command using the selected Java version
+# Usage: barista pour <command> [<args>...]
+#
+# Prepends the active Java version's bin/ directory to PATH, then runs
+# the given command. Equivalent to pyenv exec.
+#
+# Examples:
+#   barista pour java -version
+#   barista pour javac HelloWorld.java
+#   barista pour mvn package
+
+set -e
+[ -n "$BARISTA_DEBUG" ] && set -x
+
+export BARISTA_ROOT="${BARISTA_ROOT:-$HOME/.barista}"
+
+if [ $# -eq 0 ]; then
+  echo "Usage: barista pour <command> [<args>...]" >&2
+  exit 1
+fi
+
+current_version="$(barista-serving --bare 2>/dev/null || echo "system")"
+
+if [ "$current_version" != "system" ]; then
+  version_dir="${BARISTA_ROOT}/versions/${current_version}"
+  if [ ! -d "$version_dir" ]; then
+    echo "barista: version '${current_version}' not installed" >&2
+    exit 1
+  fi
+  export JAVA_HOME="$version_dir"
+  export PATH="${version_dir}/bin:${PATH}"
+fi
+
+exec "$@"

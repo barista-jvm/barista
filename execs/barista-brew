@@ -1,0 +1,152 @@
+#!/usr/bin/env bash
+# Summary: Install a Java version (brew a new JDK)
+# Usage: barista brew [-f|--force] <version>
+#        barista brew -l|--list
+#        barista brew --version
+#
+# Downloads and installs a JDK via Eclipse Temurin (Adoptium).
+# The installed version lives at $BARISTA_ROOT/versions/<version>/.
+#
+# Flags:
+#   -l / --list       List available Java feature versions
+#   -f / --force      Install even if the version is already present
+#   --version         Show the version of barista-brew
+#
+# Examples:
+#   barista brew --list
+#   barista brew 21
+#   barista brew 17 --force
+
+set -e
+[ -n "$BARISTA_DEBUG" ] && set -x
+
+export BARISTA_ROOT="${BARISTA_ROOT:-$HOME/.barista}"
+
+ADOPTIUM_API="https://api.adoptium.net/v3"
+BREW_VERSION="0.1.0"
+
+list_only=""
+force=""
+version=""
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+  -l | --list    ) list_only=1; shift ;;
+  -f | --force   ) force=1; shift ;;
+  --version      ) echo "barista-brew $BREW_VERSION"; exit 0 ;;
+  *              ) version="$1"; shift ;;
+  esac
+done
+
+require_curl() {
+  if ! command -v curl >/dev/null 2>&1; then
+    echo "barista: curl is required but not found in PATH" >&2
+    exit 1
+  fi
+}
+
+detect_os() {
+  case "$(uname -s)" in
+  Darwin ) echo "mac" ;;
+  Linux  ) echo "linux" ;;
+  *      ) echo "linux" ;;
+  esac
+}
+
+detect_arch() {
+  case "$(uname -m)" in
+  x86_64          ) echo "x64" ;;
+  aarch64 | arm64 ) echo "aarch64" ;;
+  *               ) echo "x64" ;;
+  esac
+}
+
+if [ -n "$list_only" ]; then
+  require_curl
+  echo "Fetching available Java versions from Eclipse Temurin..."
+  echo
+  releases="$(curl -sf "${ADOPTIUM_API}/info/available_releases")" || {
+    echo "barista: failed to fetch version list" >&2
+    exit 1
+  }
+  echo "LTS versions:"
+  echo "$releases" | grep -oE '"available_lts_releases":\[[^]]*\]' \
+    | grep -oE '[0-9]+' | while read -r v; do printf "  %s\n" "$v"; done
+  echo
+  echo "All feature versions:"
+  echo "$releases" | grep -oE '"available_releases":\[[^]]*\]' \
+    | grep -oE '[0-9]+' | while read -r v; do printf "  %s\n" "$v"; done
+  exit 0
+fi
+
+if [ -z "$version" ]; then
+  echo "Usage: barista brew <version>" >&2
+  echo "       barista brew --list" >&2
+  exit 1
+fi
+
+os="$(detect_os)"
+arch="$(detect_arch)"
+versions_dir="${BARISTA_ROOT}/versions"
+install_dir="${versions_dir}/${version}"
+
+if [ -d "$install_dir" ] && [ -z "$force" ]; then
+  echo "barista: Java ${version} is already brewed at ${install_dir}" >&2
+  echo "        Use '--force' to reinstall." >&2
+  exit 1
+fi
+
+require_curl
+
+# Strip to feature version (major number) for the API call
+feature_version="${version%%.*}"
+feature_version="${feature_version%%+*}"
+
+download_url="${ADOPTIUM_API}/binary/latest/${feature_version}/ga/${os}/${arch}/jdk/hotspot/normal/eclipse"
+
+echo "==> Brewing Java ${version} (feature release ${feature_version})"
+echo "    Platform : ${os}/${arch}"
+echo "    Source   : Eclipse Temurin (Adoptium)"
+echo
+
+tmpdir="$(mktemp -d)"
+trap 'rm -rf "$tmpdir"' EXIT
+
+archive="${tmpdir}/jdk.tar.gz"
+
+echo "==> Downloading..."
+if ! curl -L --progress-bar --fail -o "$archive" "$download_url"; then
+  echo "barista: download failed" >&2
+  echo "        URL: ${download_url}" >&2
+  exit 1
+fi
+
+echo
+echo "==> Installing to ${install_dir} ..."
+
+mkdir -p "$install_dir"
+tar -xzf "$archive" -C "$install_dir" --strip-components=1
+
+# macOS JDK archives nest binaries under Contents/Home/
+if [ -d "${install_dir}/Contents/Home" ]; then
+  tmp_home="${tmpdir}/jdk-home"
+  mv "${install_dir}/Contents/Home" "$tmp_home"
+  rm -rf "$install_dir"
+  mv "$tmp_home" "$install_dir"
+fi
+
+if [ ! -x "${install_dir}/bin/java" ]; then
+  echo "barista: installation looks incomplete — ${install_dir}/bin/java not found" >&2
+  rm -rf "$install_dir"
+  exit 1
+fi
+
+echo "==> Restocking shims..."
+barista-restock 2>/dev/null || true
+
+echo
+echo "Java ${version} brewed successfully."
+echo
+echo "Next steps:"
+echo "  barista house ${version}   # set as the global default"
+echo "  barista table ${version}   # set for the current directory"

@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+# Summary: Uninstall a Java version (discard the brew)
+# Usage: barista discard [-f|--force] <version>
+#
+# Removes the specified Java version from $BARISTA_ROOT/versions/.
+# Prompts for confirmation unless --force is given.
+#
+# Flags:
+#   -f / --force  Remove without prompting; suppress errors for missing versions
+#
+# Examples:
+#   barista discard 17
+#   barista discard --force 11
+
+set -e
+[ -n "$BARISTA_DEBUG" ] && set -x
+
+export BARISTA_ROOT="${BARISTA_ROOT:-$HOME/.barista}"
+
+force=""
+version=""
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+  -f | --force ) force=1; shift ;;
+  *            ) version="$1"; shift ;;
+  esac
+done
+
+if [ -z "$version" ]; then
+  echo "Usage: barista discard <version>" >&2
+  exit 1
+fi
+
+version_dir="${BARISTA_ROOT}/versions/${version}"
+
+if [ ! -d "$version_dir" ]; then
+  if [ -n "$force" ]; then
+    exit 0
+  fi
+  echo "barista: version '${version}' is not installed" >&2
+  exit 1
+fi
+
+if [ -z "$force" ]; then
+  printf "barista: discard Java %s? [y/N] " "$version"
+  read -r confirm
+  case "$confirm" in
+  [Yy] | [Yy][Ee][Ss] ) ;;
+  * )
+    echo "barista: discard cancelled."
+    exit 0 ;;
+  esac
+fi
+
+echo "==> Discarding Java ${version}..."
+rm -rf "$version_dir"
+
+barista-restock 2>/dev/null || true
+
+echo "Java ${version} has been discarded."

@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# Summary: Read the Java version recorded in a version file
+# Usage: barista version-file-read <file>
+
+set -e
+[ -n "$BARISTA_DEBUG" ] && set -x
+
+version_file="$1"
+if [ -z "$version_file" ]; then
+  echo "Usage: barista version-file-read <file>" >&2
+  exit 1
+fi
+
+if [ ! -f "$version_file" ]; then
+  exit 1
+fi
+
+while IFS= read -r line || [ -n "$line" ]; do
+  case "$line" in
+  \#* | "" ) continue ;;
+  esac
+  echo "$line"
+  exit 0
+done < "$version_file"

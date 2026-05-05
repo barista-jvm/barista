@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+# Summary: Display the full path to an executable as barista would invoke it
+# Usage: barista origin <command> [--nosystem]
+#
+# Shows the resolved filesystem path for the given Java tool (java, javac, mvn, etc.)
+# under the currently active version.
+#
+# Flags:
+#   --nosystem  Exclude system Java from the search
+#
+# Examples:
+#   barista origin java
+#   barista origin javac --nosystem
+
+set -e
+[ -n "$BARISTA_DEBUG" ] && set -x
+
+export BARISTA_ROOT="${BARISTA_ROOT:-$HOME/.barista}"
+
+nosystem=""
+command_name=""
+
+for arg in "$@"; do
+  case "$arg" in
+  --nosystem ) nosystem=1 ;;
+  *          ) command_name="$arg" ;;
+  esac
+done
+
+if [ -z "$command_name" ]; then
+  echo "Usage: barista origin <command> [--nosystem]" >&2
+  exit 1
+fi
+
+current_version="$(barista-serving --bare 2>/dev/null || echo "system")"
+
+if [ "$current_version" = "system" ]; then
+  if [ -n "$nosystem" ]; then
+    echo "barista: '$command_name': not found in any installed Java version" >&2
+    exit 1
+  fi
+  system_path="$(command -v "$command_name" 2>/dev/null || true)"
+  if [ -z "$system_path" ]; then
+    echo "barista: '$command_name': not found in system PATH" >&2
+    exit 1
+  fi
+  echo "$system_path"
+  exit 0
+fi
+
+version_dir="${BARISTA_ROOT}/versions/${current_version}"
+exec_path="${version_dir}/bin/${command_name}"
+
+if [ ! -x "$exec_path" ]; then
+  echo "barista: '$command_name': not found in version '${current_version}'" >&2
+  exit 1
+fi
+
+echo "$exec_path"

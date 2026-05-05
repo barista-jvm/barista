@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Summary: Display the version of barista
+# Usage: barista --version
+
+set -e
+echo "barista 0.1.0"

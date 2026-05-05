@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+set -e
+[ -n "$BARISTA_DEBUG" ] && set -x
+
+export BARISTA_ROOT="${BARISTA_ROOT:-$HOME/.barista}"
+
+abs_dirname() {
+  local cwd="$PWD"
+  local path="$1"
+  while [ -n "$path" ]; do
+    cd "${path%/*}"
+    local name="${path##*/}"
+    path="$(readlink "$name" 2>/dev/null || true)"
+  done
+  echo "$PWD"
+  cd "$cwd"
+}
+
+bin_dir="$(abs_dirname "$0")"
+# Support being called from bin/ (symlink) or execs/ directly
+case "$bin_dir" in
+*/execs ) BARISTA_DIR="${bin_dir%/execs}" ;;
+*/bin   ) BARISTA_DIR="${bin_dir%/bin}" ;;
+*       ) BARISTA_DIR="$bin_dir" ;;
+esac
+export BARISTA_DIR
+
+export PATH="${BARISTA_DIR}/execs:${PATH}"
+
+command="$1"
+case "$command" in
+"" | "-h" | "--help" )
+  exec barista-help
+  ;;
+"-v" | "--version" )
+  exec barista---version
+  ;;
+* )
+  command_path="$(command -v "barista-$command" 2>/dev/null || true)"
+  if [ -z "$command_path" ]; then
+    echo "barista: no such command '$command'" >&2
+    exit 1
+  fi
+  shift 1
+  exec "$command_path" "$@"
+  ;;
+esac
