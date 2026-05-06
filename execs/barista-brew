@@ -224,12 +224,19 @@ echo "==> Installing to ${install_dir} ..."
 mkdir -p "$install_dir"
 tar -xzf "$archive" -C "$install_dir" --strip-components=1
 
-# macOS JDK archives (Adoptium, some others) nest binaries under Contents/Home/
-if [ -d "${install_dir}/Contents/Home" ]; then
-  tmp_home="${tmpdir}/jdk-home"
-  mv "${install_dir}/Contents/Home" "$tmp_home"
-  rm -rf "$install_dir"
-  mv "$tmp_home" "$install_dir"
+# JDK archives vary in how many levels deep bin/java is buried.
+# Adoptium macOS:  install_dir/Contents/Home/bin/java        (1 extra level)
+# OpenJDK macOS:   install_dir/jdk-X.Y.Z.jdk/Contents/Home/bin/java (2 extra)
+# Linux tarballs:  install_dir/bin/java                      (no nesting)
+# Find bin/java wherever it landed and promote its parent to install_dir.
+if [ ! -f "${install_dir}/bin/java" ]; then
+  java_bin="$(find "$install_dir" -maxdepth 5 -name java -type f | head -1)"
+  if [ -n "$java_bin" ]; then
+    tmp_home="${tmpdir}/jdk-home"
+    mv "$(dirname "$(dirname "$java_bin")")" "$tmp_home"
+    rm -rf "$install_dir"
+    mv "$tmp_home" "$install_dir"
+  fi
 fi
 
 if [ ! -x "${install_dir}/bin/java" ]; then
