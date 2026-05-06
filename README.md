@@ -51,10 +51,11 @@ barista --version
 Downloads and installs a JDK from a configured distribution (default: Eclipse Temurin / Adoptium).
 
 ```bash
-barista brew --list                    # list versions from all distributions
-barista brew 21                        # install Java 21 (from default: adoptium)
-barista brew 21 --dist corretto        # install from Amazon Corretto
-barista brew 17 --force                # reinstall even if already present
+barista brew --list                    # list all available dist@version values
+barista brew adoptium@21               # install Java 21 from Eclipse Temurin
+barista brew corretto@21               # install Java 21 from Amazon Corretto
+barista brew openjdk@17                # install Java 17 from jdk.java.net
+barista brew adoptium@21 --force       # reinstall even if already present
 ```
 
 See [JDK distributions](#jdk-distributions) below for built-in options and how to add your own.
@@ -247,8 +248,8 @@ The archive barista downloads must be a `.tar.gz`. After extraction, if a `Conte
 Once created, verify the distribution is recognised:
 
 ```bash
-barista brew --list   # → ... internal@17, internal@21 ...
-barista brew 21 --dist internal
+barista brew --list          # → ... internal@17, internal@21 ...
+barista brew internal@21
 ```
 
 ### Distribution metadata

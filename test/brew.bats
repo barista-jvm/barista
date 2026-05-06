@@ -11,7 +11,7 @@ load test_helper
 @test "fails with no arguments" {
   run barista-brew
   assert_failure
-  assert_line "Usage: barista brew <version>"
+  assert_line "Usage: barista brew <dist>@<version>"
 }
 
 @test "fails when the version is already installed and --force is not given" {

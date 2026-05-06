@@ -1,27 +1,28 @@
 #!/usr/bin/env bash
 # Summary: Install a Java version (brew a new JDK)
-# Usage: barista brew [-f|--force] [-d|--dist <name>] <version>
+# Usage: barista brew [-f|--force] <dist>@<version>
 #        barista brew -l|--list
 #        barista brew --version
 #
 # Downloads and installs a JDK from a configured distribution.
 # The installed version lives at $BARISTA_ROOT/versions/<version>/.
+# Use 'barista brew --list' to see available dist@version values.
 #
 # Flags:
-#   -l / --list           List available Java feature versions from all distributions
-#   -f / --force          Install even if the version is already present
-#   -d / --dist <name>    Distribution to use when installing (default: adoptium)
-#   --version             Show the version of barista-brew
+#   -l / --list    List available Java versions from all distributions
+#   -f / --force   Install even if the version is already present
+#   --version      Show the version of barista-brew
 #
-# Built-in distributions: adoptium, corretto, zulu, microsoft
+# Built-in distributions: adoptium, corretto, zulu, microsoft, openjdk
 # Custom distributions:   place a <name>.sh script in
 #                         $BARISTA_ROOT/distributions/
 #
 # Examples:
 #   barista brew --list
-#   barista brew 21
-#   barista brew 21 --dist corretto
-#   barista brew 17 --force --dist zulu
+#   barista brew adoptium@21
+#   barista brew corretto@21
+#   barista brew openjdk@17
+#   barista brew adoptium@21 --force
 
 set -e
 [ -n "$BARISTA_DEBUG" ] && set -x
@@ -35,17 +36,23 @@ list_only=""
 force=""
 version=""
 distribution="adoptium"
-dist_explicit=""
 
 while [ $# -gt 0 ]; do
   case "$1" in
   -l | --list    ) list_only=1; shift ;;
   -f | --force   ) force=1; shift ;;
-  -d | --dist    ) distribution="$2"; dist_explicit=1; shift 2 ;;
   --version      ) echo "barista-brew $BREW_VERSION"; exit 0 ;;
   *              ) version="$1"; shift ;;
   esac
 done
+
+# Parse "dist@version" format, e.g. "openjdk@23" or "corretto@21.0.3"
+case "$version" in
+  *@*)
+    distribution="${version%%@*}"
+    version="${version##*@}"
+    ;;
+esac
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -163,7 +170,7 @@ fi
 # ---------------------------------------------------------------------------
 
 if [ -z "$version" ]; then
-  echo "Usage: barista brew <version>" >&2
+  echo "Usage: barista brew <dist>@<version>" >&2
   echo "       barista brew --list" >&2
   exit 1
 fi
