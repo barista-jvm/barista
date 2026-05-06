@@ -178,10 +178,10 @@ fi
 os="$(detect_os)"
 arch="$(detect_arch)"
 versions_dir="${BARISTA_ROOT}/versions"
-install_dir="${versions_dir}/${version}"
+install_dir="${versions_dir}/${distribution}@${version}"
 
 if [ -d "$install_dir" ] && [ -z "$force" ]; then
-  echo "barista: Java ${version} is already brewed at ${install_dir}" >&2
+  echo "barista: ${distribution}@${version} is already brewed at ${install_dir}" >&2
   echo "        Use '--force' to reinstall." >&2
   exit 1
 fi
@@ -252,9 +252,8 @@ echo "==> Restocking shims..."
 barista-restock 2>/dev/null || true
 
 echo
-echo "Java ${version} brewed successfully."
-echo "    Distribution : ${DIST_NAME:-$distribution}"
+echo "${distribution}@${version} brewed successfully."
 echo
 echo "Next steps:"
-echo "  barista house ${version}   # set as the global default"
-echo "  barista table ${version}   # set for the current directory"
+echo "  barista house ${distribution}@${version}   # set as the global default"
+echo "  barista table ${distribution}@${version}   # set for the current directory"
