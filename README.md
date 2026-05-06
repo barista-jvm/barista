@@ -48,13 +48,16 @@ barista --version
 
 ### `barista brew` — install a Java version
 
-Downloads and installs a JDK via [Eclipse Temurin (Adoptium)](https://adoptium.net).
+Downloads and installs a JDK from a configured distribution (default: Eclipse Temurin / Adoptium).
 
 ```bash
-barista brew --list          # list available feature versions
-barista brew 21              # install Java 21 (latest patch)
-barista brew 17 --force      # reinstall even if already present
+barista brew --list                    # list versions from all distributions
+barista brew 21                        # install Java 21 (from default: adoptium)
+barista brew 21 --dist corretto        # install from Amazon Corretto
+barista brew 17 --force                # reinstall even if already present
 ```
+
+See [JDK distributions](#jdk-distributions) below for built-in options and how to add your own.
 
 ### `barista discard` — uninstall a Java version
 
@@ -174,6 +177,86 @@ barista help brew            # full usage for a specific command
 
 ```bash
 barista --version            # barista 0.1.0
+```
+
+---
+
+## JDK distributions
+
+barista uses a plugin-style distribution system. Each distribution is a small bash script that tells barista where to download a JDK for a given version, OS, and architecture.
+
+### Built-in distributions
+
+| Name | Provider |
+|---|---|
+| `adoptium` | [Eclipse Temurin (Adoptium)](https://adoptium.net) — **default** |
+| `corretto` | [Amazon Corretto](https://aws.amazon.com/corretto/) |
+| `zulu` | [Azul Zulu](https://www.azul.com/downloads/) |
+| `microsoft` | [Microsoft Build of OpenJDK](https://microsoft.com/openjdk) |
+
+### Adding a custom distribution
+
+Create a file at `$BARISTA_ROOT/distributions/<name>.sh` (default: `~/.barista/distributions/<name>.sh`). A user-defined file with the same name as a built-in overrides it.
+
+The script must define:
+
+- **`DIST_NAME`** — human-readable label shown in output
+- **`dist_url(feature_version, os, arch)`** — echoes the download URL for the given Java major version, OS (`mac` or `linux`), and architecture (`x64` or `aarch64`)
+- **`dist_list()`** _(optional)_ — prints available versions (one per line) shown by `barista brew --list`
+
+**Minimal example** — a private mirror with a predictable URL pattern:
+
+```bash
+# ~/.barista/distributions/internal.sh
+DIST_NAME="Acme Internal JDK Mirror"
+
+dist_url() {
+  local feature_version="$1" os="$2" arch="$3"
+  printf 'https://jdk.internal.acme.com/jdk-%s-%s-%s.tar.gz' \
+    "$feature_version" "$os" "$arch"
+}
+
+dist_list() {
+  echo "Available versions:"
+  echo "  17"
+  echo "  21"
+}
+```
+
+**Advanced example** — resolving the URL via an API call:
+
+```bash
+# ~/.barista/distributions/myregistry.sh
+DIST_NAME="My JDK Registry"
+REGISTRY_API="https://jdk-registry.internal.acme.com/api"
+
+dist_url() {
+  local feature_version="$1" os="$2" arch="$3"
+  curl -sf "${REGISTRY_API}/latest?version=${feature_version}&os=${os}&arch=${arch}" \
+    | grep -o '"url":"[^"]*"' | sed 's/"url":"//;s/"//'
+}
+
+dist_list() {
+  echo "Fetching versions from registry..."
+  curl -sf "${REGISTRY_API}/versions" | grep -oE '[0-9]+'
+}
+```
+
+The archive barista downloads must be a `.tar.gz`. After extraction, if a `Contents/Home/` subdirectory is present (common in macOS Adoptium tarballs), barista automatically promotes it to the version root.
+
+Once created, verify the distribution is recognised:
+
+```bash
+barista brew --list   # → ... internal@17, internal@21 ...
+barista brew 21 --dist internal
+```
+
+### Distribution metadata
+
+barista records which distribution was used to install each version:
+
+```
+~/.barista/versions/21/.barista-dist   # contains: adoptium
 ```
 
 ---

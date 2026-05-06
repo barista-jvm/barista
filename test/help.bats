@@ -29,7 +29,7 @@ load test_helper
   run barista-help brew
   assert_success
   assert_line "Summary: Install a Java version (brew a new JDK)"
-  assert_line "Usage: barista brew [-f|--force] <version>"
+  assert_line "Usage: barista brew [-f|--force] [-d|--dist <name>] <version>"
 }
 
 @test "help <command> prints flags section" {

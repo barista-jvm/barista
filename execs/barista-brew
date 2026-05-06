@@ -1,42 +1,55 @@
 #!/usr/bin/env bash
 # Summary: Install a Java version (brew a new JDK)
-# Usage: barista brew [-f|--force] <version>
+# Usage: barista brew [-f|--force] [-d|--dist <name>] <version>
 #        barista brew -l|--list
 #        barista brew --version
 #
-# Downloads and installs a JDK via Eclipse Temurin (Adoptium).
+# Downloads and installs a JDK from a configured distribution.
 # The installed version lives at $BARISTA_ROOT/versions/<version>/.
 #
 # Flags:
-#   -l / --list       List available Java feature versions
-#   -f / --force      Install even if the version is already present
-#   --version         Show the version of barista-brew
+#   -l / --list           List available Java feature versions from all distributions
+#   -f / --force          Install even if the version is already present
+#   -d / --dist <name>    Distribution to use when installing (default: adoptium)
+#   --version             Show the version of barista-brew
+#
+# Built-in distributions: adoptium, corretto, zulu, microsoft
+# Custom distributions:   place a <name>.sh script in
+#                         $BARISTA_ROOT/distributions/
 #
 # Examples:
 #   barista brew --list
 #   barista brew 21
-#   barista brew 17 --force
+#   barista brew 21 --dist corretto
+#   barista brew 17 --force --dist zulu
 
 set -e
 [ -n "$BARISTA_DEBUG" ] && set -x
 
 export BARISTA_ROOT="${BARISTA_ROOT:-$HOME/.barista}"
+export BARISTA_DIR="${BARISTA_DIR:-${_BARISTA_INSTALL_PREFIX:-$(cd "$(dirname "$0")/.." && pwd)}}"
 
-ADOPTIUM_API="https://api.adoptium.net/v3"
 BREW_VERSION="0.1.0"
 
 list_only=""
 force=""
 version=""
+distribution="adoptium"
+dist_explicit=""
 
 while [ $# -gt 0 ]; do
   case "$1" in
   -l | --list    ) list_only=1; shift ;;
   -f | --force   ) force=1; shift ;;
+  -d | --dist    ) distribution="$2"; dist_explicit=1; shift 2 ;;
   --version      ) echo "barista-brew $BREW_VERSION"; exit 0 ;;
   *              ) version="$1"; shift ;;
   esac
 done
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
 
 require_curl() {
   if ! command -v curl >/dev/null 2>&1; then
@@ -61,27 +74,93 @@ detect_arch() {
   esac
 }
 
+# ---------------------------------------------------------------------------
+# Load distribution script
+# ---------------------------------------------------------------------------
+
+load_distribution() {
+  local name="$1"
+  local dist_file=""
+  local user_dir="${BARISTA_ROOT}/distributions"
+  local builtin_dir="${BARISTA_DIR}/distributions"
+
+  # User-defined overrides built-in
+  for dir in "$user_dir" "$builtin_dir"; do
+    if [ -f "${dir}/${name}.sh" ]; then
+      dist_file="${dir}/${name}.sh"
+      break
+    fi
+  done
+
+  if [ -z "$dist_file" ]; then
+    echo "barista: unknown distribution '${name}'" >&2
+    echo "        Use 'barista brew --list' to see available distributions." >&2
+    echo "        Add custom distributions to ${user_dir}/." >&2
+    exit 1
+  fi
+
+  # shellcheck source=/dev/null
+  . "$dist_file"
+
+  if ! command -v dist_url >/dev/null 2>&1; then
+    echo "barista: distribution '${name}' does not define dist_url()" >&2
+    exit 1
+  fi
+}
+
+# ---------------------------------------------------------------------------
+# List mode
+# ---------------------------------------------------------------------------
+
+list_one_distribution() {
+  local name="$1"
+  unset -f dist_url dist_list 2>/dev/null || true
+  DIST_NAME=""
+  load_distribution "$name"
+  if command -v dist_list >/dev/null 2>&1; then
+    dist_list | while IFS= read -r ver; do
+      [ -n "$ver" ] && printf '%s@%s\n' "$name" "$ver"
+    done
+  fi
+}
+
+list_all_distributions() {
+  local user_dir="${BARISTA_ROOT}/distributions"
+  local builtin_dir="${BARISTA_DIR}/distributions"
+  local all_names=""
+
+  for dir in "$builtin_dir" "$user_dir"; do
+    [ -d "$dir" ] || continue
+    for f in "$dir"/*.sh; do
+      [ -f "$f" ] || continue
+      local name
+      name="$(basename "$f" .sh)"
+      case " $all_names " in
+        *" $name "*) ;;
+        *) all_names="${all_names:+$all_names }$name" ;;
+      esac
+    done
+  done
+
+  if [ -z "$all_names" ]; then
+    echo "barista: no distributions found in ${builtin_dir} or ${user_dir}" >&2
+    return 1
+  fi
+
+  for name in $all_names; do
+    list_one_distribution "$name"
+  done
+}
+
 if [ -n "$list_only" ]; then
   require_curl
-  echo "Fetching available Java versions from Eclipse Temurin..."
-  echo
-  releases="$(curl -sf "${ADOPTIUM_API}/info/available_releases")" || {
-    echo "barista: failed to fetch version list" >&2
-    exit 1
-  }
-  # The API returns pretty-printed JSON with arrays spanning multiple lines.
-  # Collapse to a single line so grep can match across the full array literal.
-  flat="$(echo "$releases" | tr -d '\n')"
-
-  echo "LTS versions:"
-  echo "$flat" | grep -oE '"available_lts_releases": *\[[^]]*\]' \
-    | grep -oE '[0-9]+' | while read -r v; do printf "  %s\n" "$v"; done
-  echo
-  echo "All feature versions:"
-  echo "$flat" | grep -oE '"available_releases": *\[[^]]*\]' \
-    | grep -oE '[0-9]+' | while read -r v; do printf "  %s\n" "$v"; done
+  list_all_distributions
   exit 0
 fi
+
+# ---------------------------------------------------------------------------
+# Install mode
+# ---------------------------------------------------------------------------
 
 if [ -z "$version" ]; then
   echo "Usage: barista brew <version>" >&2
@@ -101,16 +180,23 @@ if [ -d "$install_dir" ] && [ -z "$force" ]; then
 fi
 
 require_curl
+load_distribution "$distribution"
 
-# Strip to feature version (major number) for the API call
+# Strip to feature version (major number) for the API / URL
 feature_version="${version%%.*}"
 feature_version="${feature_version%%+*}"
 
-download_url="${ADOPTIUM_API}/binary/latest/${feature_version}/ga/${os}/${arch}/jdk/hotspot/normal/eclipse"
+download_url="$(dist_url "$feature_version" "$os" "$arch")"
+
+if [ -z "$download_url" ]; then
+  echo "barista: distribution '${distribution}' returned no URL for Java ${version} on ${os}/${arch}" >&2
+  exit 1
+fi
 
 echo "==> Brewing Java ${version} (feature release ${feature_version})"
-echo "    Platform : ${os}/${arch}"
-echo "    Source   : Eclipse Temurin (Adoptium)"
+echo "    Platform     : ${os}/${arch}"
+echo "    Distribution : ${DIST_NAME:-$distribution}"
+echo "    Source       : ${download_url}"
 echo
 
 tmpdir="$(mktemp -d)"
@@ -131,7 +217,7 @@ echo "==> Installing to ${install_dir} ..."
 mkdir -p "$install_dir"
 tar -xzf "$archive" -C "$install_dir" --strip-components=1
 
-# macOS JDK archives nest binaries under Contents/Home/
+# macOS JDK archives (Adoptium, some others) nest binaries under Contents/Home/
 if [ -d "${install_dir}/Contents/Home" ]; then
   tmp_home="${tmpdir}/jdk-home"
   mv "${install_dir}/Contents/Home" "$tmp_home"
@@ -145,11 +231,15 @@ if [ ! -x "${install_dir}/bin/java" ]; then
   exit 1
 fi
 
+# Record which distribution was used
+printf '%s\n' "$distribution" > "${install_dir}/.barista-dist"
+
 echo "==> Restocking shims..."
 barista-restock 2>/dev/null || true
 
 echo
 echo "Java ${version} brewed successfully."
+echo "    Distribution : ${DIST_NAME:-$distribution}"
 echo
 echo "Next steps:"
 echo "  barista house ${version}   # set as the global default"
