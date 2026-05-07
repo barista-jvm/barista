@@ -193,7 +193,42 @@ barista uses a plugin-style distribution system. Each distribution is a small ba
 | `adoptium` | [Eclipse Temurin (Adoptium)](https://adoptium.net) — **default** |
 | `corretto` | [Amazon Corretto](https://aws.amazon.com/corretto/) |
 | `zulu` | [Azul Zulu](https://www.azul.com/downloads/) |
-| `microsoft` | [Microsoft Build of OpenJDK](https://microsoft.com/openjdk) |
+| `microsoft` | [Microsoft Build of OpenJDK](https://learn.microsoft.com/en-ca/java/openjdk/download) |
+| `openjdk` | [OpenJDK (jdk.java.net)](https://jdk.java.net/archive/) |
+
+### OpenJDK distribution
+
+The `openjdk` distribution provides official OpenJDK builds from [jdk.java.net/archive](https://jdk.java.net/archive/).
+
+**Version list** — `barista brew --list` scrapes the archive page live and shows the latest patch release per major version:
+
+```
+openjdk@26
+openjdk@25.0.2
+openjdk@24.0.2
+openjdk@23.0.2
+openjdk@21.0.2
+...
+openjdk@9.0.4
+```
+
+**Installing:**
+
+```bash
+barista brew openjdk@21      # installs the latest 21.x available in the archive
+barista brew openjdk@23.0.2  # same result — version resolves to the latest 23.x
+```
+
+**Platform notes:**
+
+| Platform | Versions with aarch64 builds |
+|---|---|
+| macOS | Java 17 and later |
+| Linux | Java 16 and later |
+
+Older versions (≤ Java 15) only have `x64` builds. Requesting an unavailable combination prints a clear error and exits without downloading.
+
+**URL resolution** — unlike other distributions, every install and `--list` call fetches [jdk.java.net/archive](https://jdk.java.net/archive/) at runtime, because each release URL contains a unique hash that cannot be predicted. Ensure network access is available when using this distribution.
 
 ### Adding a custom distribution
 
@@ -257,7 +292,8 @@ barista brew internal@21
 barista records which distribution was used to install each version:
 
 ```
-~/.barista/versions/21/.barista-dist   # contains: adoptium
+~/.barista/versions/adoptium@21/.barista-dist   # contains: adoptium
+~/.barista/versions/openjdk@23.0.2/.barista-dist  # contains: openjdk
 ```
 
 ---
