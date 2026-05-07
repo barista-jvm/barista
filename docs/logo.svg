@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300" width="300" height="300">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2A1508"/>
+      <stop offset="100%" stop-color="#0E0600"/>
+    </linearGradient>
+    <linearGradient id="cupBody" x1="0%" y1="0%" x2="10%" y2="100%">
+      <stop offset="0%" stop-color="#A8774E"/>
+      <stop offset="100%" stop-color="#6B4226"/>
+    </linearGradient>
+    <linearGradient id="saucer" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#8B5E3C"/>
+      <stop offset="100%" stop-color="#5A3518"/>
+    </linearGradient>
+    <radialGradient id="coffee" cx="45%" cy="40%" r="55%">
+      <stop offset="0%" stop-color="#2A1000"/>
+      <stop offset="100%" stop-color="#0A0400"/>
+    </radialGradient>
+    <filter id="softShadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000" flood-opacity="0.5"/>
+    </filter>
+  </defs>
+
+  <!-- Background circle -->
+  <circle cx="150" cy="150" r="142" fill="url(#bg)"/>
+
+  <!-- Subtle inner glow ring -->
+  <circle cx="150" cy="150" r="142" fill="none"
+          stroke="#5C3018" stroke-width="2" opacity="0.5"/>
+
+  <!-- Saucer -->
+  <ellipse cx="150" cy="210" rx="68" ry="11" fill="url(#saucer)" filter="url(#softShadow)"/>
+  <ellipse cx="150" cy="207" rx="58" ry="7"  fill="#9B6B40"/>
+
+  <!-- Cup body (trapezoid — wider at top, narrows slightly at base) -->
+  <path d="M 100 148 L 105 200 Q 105 205 111 205 L 189 205 Q 195 205 195 200 L 200 148 Z"
+        fill="url(#cupBody)" filter="url(#softShadow)"/>
+
+  <!-- Left-side sheen on cup -->
+  <path d="M 103 155 L 107 200 Q 107 204 112 204 L 116 204 L 110 155 Z"
+        fill="#C49060" opacity="0.25"/>
+
+  <!-- Cup top rim -->
+  <ellipse cx="150" cy="148" rx="50" ry="8.5" fill="#BB8858"/>
+
+  <!-- Coffee surface -->
+  <ellipse cx="150" cy="147" rx="44" ry="7" fill="url(#coffee)"/>
+
+  <!-- Foam / crema highlight -->
+  <ellipse cx="143" cy="145" rx="14" ry="4"
+           fill="#3D1A06" opacity="0.55" transform="rotate(-10 143 145)"/>
+  <ellipse cx="158" cy="146" rx="7" ry="2.5"
+           fill="#4A2408" opacity="0.4" transform="rotate(8 158 146)"/>
+
+  <!-- Handle (outer arc) -->
+  <path d="M 200 162 Q 234 162 234 180 Q 234 198 200 198"
+        stroke="#7A4A28" stroke-width="13" fill="none"
+        stroke-linecap="round"/>
+  <!-- Handle (inner highlight) -->
+  <path d="M 200 162 Q 228 162 228 180 Q 228 198 200 198"
+        stroke="#A87040" stroke-width="5" fill="none"
+        stroke-linecap="round" opacity="0.45"/>
+
+  <!-- Steam wisps (three S-curves) -->
+  <path d="M 127 133
+           C 121 118 133 106 127  91
+           C 121  76 132  64 127  50"
+        stroke="#8FAFC8" stroke-width="3.5" fill="none"
+        stroke-linecap="round" opacity="0.75"/>
+
+  <path d="M 150 130
+           C 144 113 157  99 151  82
+           C 145  65 157  51 151  35"
+        stroke="#8FAFC8" stroke-width="3.5" fill="none"
+        stroke-linecap="round" opacity="0.75"/>
+
+  <path d="M 173 133
+           C 167 118 179 106 173  91
+           C 167  76 178  64 173  50"
+        stroke="#8FAFC8" stroke-width="3.5" fill="none"
+        stroke-linecap="round" opacity="0.75"/>
+
+  <!-- "barista" wordmark -->
+  <text x="150" y="254"
+        font-family="Georgia, 'Times New Roman', serif"
+        font-size="34" fill="#D4A062"
+        text-anchor="middle"
+        font-weight="bold"
+        letter-spacing="4">barista</text>
+
+  <!-- "jvm" sub-label -->
+  <text x="150" y="276"
+        font-family="Georgia, 'Times New Roman', serif"
+        font-size="14" fill="#7A5530"
+        text-anchor="middle"
+        letter-spacing="6">jvm</text>
+</svg>

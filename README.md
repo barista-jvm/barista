@@ -1,5 +1,9 @@
 # barista
 
+<p align="center">
+  <img src="docs/logo.svg" width="180" alt="barista logo"/>
+</p>
+
 Java version management, barista-style.
 
 `barista` lets you switch between multiple JDK versions on a per-project or per-shell basis. It works by placing shim executables in front of your `PATH` and routing `java`, `javac`, and other JDK tools to the correct version based on a simple precedence chain.
