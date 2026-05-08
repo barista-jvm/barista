@@ -20,6 +20,8 @@ setup() {
 
   # Required by barista-help and barista-commands
   export BARISTA_DIR="${_BARISTA_INSTALL_PREFIX}"
+  export BARISTA_VERSION_STRING
+  BARISTA_VERSION_STRING="$(tr -d '[:space:]' < "${_BARISTA_INSTALL_PREFIX}/version.txt")"
 
   mkdir -p "${BARISTA_TEST_DIR}/bin"
   mkdir -p "$HOME"

@@ -22,12 +22,12 @@ load test_helper
 
 @test "--version flag delegates to barista---version" {
   run barista --version
-  assert_success "barista 0.1.0"
+  assert_success "barista ${BARISTA_VERSION_STRING}"
 }
 
 @test "-v flag delegates to barista---version" {
   run barista -v
-  assert_success "barista 0.1.0"
+  assert_success "barista ${BARISTA_VERSION_STRING}"
 }
 
 @test "unknown command fails with an error message" {

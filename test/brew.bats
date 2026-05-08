@@ -5,7 +5,7 @@ load test_helper
 @test "--version prints barista-brew version" {
   run barista-brew --version
   assert_success
-  assert_line "barista-brew 0.1.0"
+  assert_line "barista-brew ${BARISTA_VERSION_STRING}"
 }
 
 @test "fails with no arguments" {

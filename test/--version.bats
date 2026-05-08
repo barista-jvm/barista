@@ -4,5 +4,5 @@ load test_helper
 
 @test "prints barista version" {
   run barista---version
-  assert_success "barista 0.1.0"
+  assert_success "barista ${BARISTA_VERSION_STRING}"
 }
