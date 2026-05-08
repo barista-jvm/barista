@@ -1,12 +1,41 @@
-# barista
+# Barista
 
 <p align="center">
   <img src="docs/logo.svg" width="180" alt="barista logo"/>
 </p>
 
-Java version management, barista-style.
+Java version management, Barista-style.
 
-`barista` lets you switch between multiple JDK versions on a per-project or per-shell basis. It works by placing shim executables in front of your `PATH` and routing `java`, `javac`, and other JDK tools to the correct version based on a simple precedence chain.
+`barista` lets you switch between multiple JDK versions on a per-project or per-shell basis. It works by placing shim executables in front of your `PATH` and routing `java` , `javac` , and other JDK tools to the correct version based on a simple precedence chain.
+
+- [Barista](#barista)
+  - [How it works](#how-it-works)
+  - [Installation](#installation)
+  - [Shell compatibility](#shell-compatibility)
+  - [Commands](#commands)
+    - [`barista brew` — install a Java version](#barista-brew--install-a-java-version)
+    - [`barista discard` — uninstall a Java version](#barista-discard--uninstall-a-java-version)
+    - [`barista menu` — list installed versions](#barista-menu--list-installed-versions)
+    - [`barista serving` — show active version](#barista-serving--show-active-version)
+    - [`barista house` — set the global default](#barista-house--set-the-global-default)
+    - [`barista table` — set a per-directory version](#barista-table--set-a-per-directory-version)
+    - [`barista session` — set a version for the current shell](#barista-session--set-a-version-for-the-current-shell)
+    - [`barista pour` — run a command with a specific version](#barista-pour--run-a-command-with-a-specific-version)
+    - [`barista origin` — find the active Java executable](#barista-origin--find-the-active-java-executable)
+    - [`barista counter` — show the install prefix](#barista-counter--show-the-install-prefix)
+    - [`barista pantry` — show BARISTA\_ROOT](#barista-pantry--show-barista_root)
+    - [`barista restock` — regenerate shims](#barista-restock--regenerate-shims)
+    - [`barista setup` — print shell integration code](#barista-setup--print-shell-integration-code)
+    - [`barista version-file` — find the active version file](#barista-version-file--find-the-active-version-file)
+    - [`barista help` — command documentation](#barista-help--command-documentation)
+    - [`barista --version`](#barista---version)
+  - [JDK distributions](#jdk-distributions)
+    - [Built-in distributions](#built-in-distributions)
+    - [OpenJDK distribution](#openjdk-distribution)
+    - [Adding a custom distribution](#adding-a-custom-distribution)
+    - [Distribution metadata](#distribution-metadata)
+  - [License](#license)
+
 
 ---
 
@@ -19,7 +48,7 @@ $BARISTA_ROOT/version    (barista house)
 system Java                                  ← fallback
 ```
 
-Installed JDKs live under `$BARISTA_ROOT/versions/` (default: `~/.barista/versions/`). Shim scripts in `~/.barista/shims/` intercept every Java tool call and forward it to the right version.
+Installed JDKs live under `$BARISTA_ROOT/versions/` (default: `~/.barista/versions/` ). Shim scripts in `~/.barista/shims/` intercept every Java tool call and forward it to the right version.
 
 ---
 
@@ -33,18 +62,31 @@ export PATH="$HOME/.barista/barista/bin:$PATH"
 eval "$(barista setup -)"
 ```
 
-For fish shell, add to `~/.config/fish/config.fish`:
+For fish shell, add to `~/.config/fish/config.fish` :
 
 ```fish
 set -gx PATH "$HOME/.barista/barista/bin" $PATH
 barista setup fish | source
 ```
 
-Restart your shell (or `source ~/.zshrc`), then verify:
+Restart your shell (or `source ~/.zshrc` ), then verify:
 
 ```bash
 barista --version
 ```
+
+---
+
+## Shell compatibility
+
+| Shell | Minimum version | Notes |
+| ----- | --------------- | ----- |
+| bash  | 3.2             | macOS ships with bash 3.2; bash 4.0+ recommended on Linux |
+| zsh   | 5.0             | |
+| fish  | 3.0             | Configure via `~/.config/fish/config.fish` |
+| ksh   | 93u+            | Falls through to the bash/zsh integration path |
+
+All shells except fish use the same `eval "$(barista setup -)"` integration. See [`barista setup`](#barista-setup--print-shell-integration-code) for per-shell options.
 
 ---
 
@@ -87,11 +129,11 @@ barista serving --bare       # 21.0.3+9
 
 ### `barista house` — set the global default
 
-Writes to `$BARISTA_ROOT/version`. Applies everywhere unless overridden.
+Writes to `$BARISTA_ROOT/version` . Applies everywhere unless overridden.
 
 ```bash
 barista house                # show current global version
-barista house 21             # set global version
+barista house corretto@21    # set global version
 barista house system         # reset to system Java
 ```
 
@@ -100,10 +142,10 @@ barista house system         # reset to system Java
 Writes `.java-version` in the current directory. `barista` walks up the directory tree to find it.
 
 ```bash
-barista table                # show local version
-barista table 17             # set local version
-barista table --unset        # remove .java-version
-barista table 21 --force     # set without verifying it is installed
+barista table                     # show local version
+barista table openjdk@17.0.2          # set local version
+barista table --unset             # remove .java-version
+barista table openjdk@21 --force  # set without verifying it is installed
 ```
 
 ### `barista session` — set a version for the current shell
@@ -111,7 +153,7 @@ barista table 21 --force     # set without verifying it is installed
 Overrides both `house` and `table` for the life of the shell session.
 
 ```bash
-barista session 21           # export BARISTA_VERSION=21
+barista session corretto@21  # export BARISTA_VERSION=21
 barista session --unset      # clear the override
 ```
 
@@ -119,7 +161,7 @@ barista session --unset      # clear the override
 
 ### `barista pour` — run a command with a specific version
 
-Prepends the active version's `bin/` to `PATH`, then runs the command.
+Prepends the active version's `bin/` to `PATH` , then runs the command.
 
 ```bash
 barista pour java -version
@@ -136,14 +178,14 @@ barista origin javac --nosystem
 ### `barista counter` — show the install prefix
 
 ```bash
-barista counter              # ~/.barista/versions/21.0.3+9
-barista counter 17
+barista counter                 # ~/.barista/versions/adoptium@21
+barista counter openjdk@17.0.2
 ```
 
 ### `barista pantry` — show BARISTA_ROOT
 
 ```bash
-barista pantry               # /Users/you/.barista
+barista pantry               # ~/.barista
 ```
 
 ### `barista restock` — regenerate shims
@@ -151,7 +193,7 @@ barista pantry               # /Users/you/.barista
 Run after installing or removing versions to keep shims in sync.
 
 ```bash
-barista restock
+barista restock      # logs 'barista: restocked yy shim(s) in ~/.barista/shims'
 ```
 
 ### `barista setup` — print shell integration code
@@ -177,7 +219,7 @@ barista help                 # list all commands with summaries
 barista help brew            # full usage for a specific command
 ```
 
-### `barista --version`
+### `barista --version` 
 
 ```bash
 barista --version            # barista 0.1.0
@@ -191,19 +233,19 @@ barista uses a plugin-style distribution system. Each distribution is a small ba
 
 ### Built-in distributions
 
-| Name | Provider |
-|---|---|
-| `adoptium` | [Eclipse Temurin (Adoptium)](https://adoptium.net) — **default** |
-| `corretto` | [Amazon Corretto](https://aws.amazon.com/corretto/) |
-| `zulu` | [Azul Zulu](https://www.azul.com/downloads/) |
+| Name        | Provider                                                                              |
+| ----------- | ------------------------------------------------------------------------------------- |
+| `adoptium`  | [Eclipse Temurin (Adoptium)](https://adoptium.net)                                    |
+| `corretto`  | [Amazon Corretto](https://aws.amazon.com/corretto/)                                   |
+| `zulu`      | [Azul Zulu](https://www.azul.com/downloads/)                                          |
 | `microsoft` | [Microsoft Build of OpenJDK](https://learn.microsoft.com/en-ca/java/openjdk/download) |
-| `openjdk` | [OpenJDK (jdk.java.net)](https://jdk.java.net/archive/) |
+| `openjdk`   | [OpenJDK (jdk.java.net)](https://jdk.java.net/archive/)                               |
 
 ### OpenJDK distribution
 
 The `openjdk` distribution provides official OpenJDK builds from [jdk.java.net/archive](https://jdk.java.net/archive/).
 
-**Version list** — `barista brew --list` scrapes the archive page live and shows the latest patch release per major version:
+ **Version list** — `barista brew --list` scrapes the archive page live and shows the latest patch release per major version:
 
 ```
 openjdk@26
@@ -215,35 +257,35 @@ openjdk@21.0.2
 openjdk@9.0.4
 ```
 
-**Installing:**
+ **Installing:** 
 
 ```bash
 barista brew openjdk@21      # installs the latest 21.x available in the archive
 barista brew openjdk@23.0.2  # same result — version resolves to the latest 23.x
 ```
 
-**Platform notes:**
+ **Platform notes:** 
 
 | Platform | Versions with aarch64 builds |
-|---|---|
-| macOS | Java 17 and later |
-| Linux | Java 16 and later |
+| -------- | ---------------------------- |
+| macOS    | Java 17 and later            |
+| Linux    | Java 16 and later            |
 
 Older versions (≤ Java 15) only have `x64` builds. Requesting an unavailable combination prints a clear error and exits without downloading.
 
-**URL resolution** — unlike other distributions, every install and `--list` call fetches [jdk.java.net/archive](https://jdk.java.net/archive/) at runtime, because each release URL contains a unique hash that cannot be predicted. Ensure network access is available when using this distribution.
+ **URL resolution** — unlike other distributions, every install and `--list` call fetches [jdk.java.net/archive](https://jdk.java.net/archive/) at runtime, because each release URL contains a unique hash that cannot be predicted. Ensure network access is available when using this distribution.
 
 ### Adding a custom distribution
 
-Create a file at `$BARISTA_ROOT/distributions/<name>.sh` (default: `~/.barista/distributions/<name>.sh`). A user-defined file with the same name as a built-in overrides it.
+Create a file at `$BARISTA_ROOT/distributions/<name>.sh` (default: `~/.barista/distributions/<name>.sh` ). A user-defined file with the same name as a built-in overrides it.
 
 The script must define:
 
-- **`DIST_NAME`** — human-readable label shown in output
-- **`dist_url(feature_version, os, arch)`** — echoes the download URL for the given Java major version, OS (`mac` or `linux`), and architecture (`x64` or `aarch64`)
-- **`dist_list()`** _(optional)_ — prints available versions (one per line) shown by `barista brew --list`
+* **`DIST_NAME`** — human-readable label shown in output
+* **`dist_url(feature_version, os, arch)`** — echoes the download URL for the given Java major version, OS (`mac` or `linux`), and architecture (`x64` or `aarch64`)
+* **`dist_list()`** _(optional)_ — prints available versions (one per line) shown by `barista brew --list`
 
-**Minimal example** — a private mirror with a predictable URL pattern:
+ **Minimal example** — a private mirror with a predictable URL pattern:
 
 ```bash
 # ~/.barista/distributions/internal.sh
@@ -262,7 +304,7 @@ dist_list() {
 }
 ```
 
-**Advanced example** — resolving the URL via an API call:
+ **Advanced example** — resolving the URL via an API call:
 
 ```bash
 # ~/.barista/distributions/myregistry.sh
@@ -281,7 +323,7 @@ dist_list() {
 }
 ```
 
-The archive barista downloads must be a `.tar.gz`. After extraction, if a `Contents/Home/` subdirectory is present (common in macOS Adoptium tarballs), barista automatically promotes it to the version root.
+The archive barista downloads must be a `.tar.gz` . After extraction, if a `Contents/Home/` subdirectory is present (common in macOS Adoptium tarballs), barista automatically promotes it to the version root.
 
 Once created, verify the distribution is recognised:
 
