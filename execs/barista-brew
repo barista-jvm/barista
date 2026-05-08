@@ -65,6 +65,17 @@ require_curl() {
   fi
 }
 
+# Resolve a partial version string to the latest matching full version from
+# dist_list(). Examples: "25" → "25.0.3", "21.0" → "21.0.11", "25.0.3" → "25.0.3"
+# Falls back to the input unchanged if dist_list() is unavailable or has no match.
+resolve_version() {
+  local partial="$1" escaped resolved
+  command -v dist_list >/dev/null 2>&1 || { printf '%s' "$partial"; return 0; }
+  escaped="$(printf '%s' "$partial" | sed 's/\./\\./g')"
+  resolved="$(dist_list 2>/dev/null | grep -E "^${escaped}(\.|$)" | head -1)"
+  printf '%s' "${resolved:-$partial}"
+}
+
 detect_os() {
   case "$(uname -s)" in
   Darwin ) echo "mac" ;;
@@ -175,6 +186,12 @@ if [ -z "$version" ]; then
   exit 1
 fi
 
+require_curl
+load_distribution "$distribution"
+
+# Resolve partial input to the latest matching full version, e.g. "25" → "25.0.3"
+version="$(resolve_version "$version")"
+
 os="$(detect_os)"
 arch="$(detect_arch)"
 versions_dir="${BARISTA_ROOT}/versions"
@@ -185,9 +202,6 @@ if [ -d "$install_dir" ] && [ -z "$force" ]; then
   echo "        Use '--force' to reinstall." >&2
   exit 1
 fi
-
-require_curl
-load_distribution "$distribution"
 
 # Strip to feature version (major number) for the API / URL
 feature_version="${version%%.*}"
