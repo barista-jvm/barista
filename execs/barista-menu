@@ -1,13 +1,12 @@
 #!/usr/bin/env bash
 # Summary: List all Java versions available to barista
-# Usage: barista menu [--bare] [--skip-aliases]
+# Usage: barista menu [--bare]
 #
 # Lists installed Java versions under $BARISTA_ROOT/versions/.
 # The currently active version is marked with an asterisk (*).
 #
 # Flags:
-#   --bare          Print only version names, one per line
-#   --skip-aliases  Skip symlinked versions
+#   --bare  Print only version names, one per line
 
 set -e
 [ -n "$BARISTA_DEBUG" ] && set -x
@@ -15,12 +14,10 @@ set -e
 export BARISTA_ROOT="${BARISTA_ROOT:-$HOME/.barista}"
 
 bare=""
-skip_aliases=""
 
 for arg in "$@"; do
   case "$arg" in
-  --bare         ) bare=1 ;;
-  --skip-aliases ) skip_aliases=1 ;;
+  --bare ) bare=1 ;;
   esac
 done
 
@@ -42,9 +39,6 @@ found=0
 for version_dir in "${versions_dir}"/*/; do
   version="${version_dir%/}"
   version="${version##*/}"
-  if [ -n "$skip_aliases" ] && [ -L "${versions_dir}/${version}" ]; then
-    continue
-  fi
   found=1
   if [ -n "$bare" ]; then
     echo "$version"

@@ -67,8 +67,8 @@ See [JDK distributions](#jdk-distributions) below for built-in options and how t
 ### `barista discard` — uninstall a Java version
 
 ```bash
-barista discard 17           # prompts for confirmation
-barista discard --force 11   # no prompt
+barista discard openjdk@17.0.2          # prompts for confirmation
+barista discard --force adoptium@21     # no prompt
 ```
 
 ### `barista menu` — list installed versions
@@ -76,7 +76,6 @@ barista discard --force 11   # no prompt
 ```bash
 barista menu                 # shows all versions; * marks the active one
 barista menu --bare          # version names only
-barista menu --skip-aliases  # omit symlinked versions
 ```
 
 ### `barista serving` — show active version

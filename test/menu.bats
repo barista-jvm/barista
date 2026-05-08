@@ -63,12 +63,3 @@ _setup() {
   assert_line "21.0.3"
   refute_line "* 21.0.3"
 }
-
-@test "--skip-aliases omits symlinked versions" {
-  create_version "21.0.3"
-  ln -s "${BARISTA_ROOT}/versions/21.0.3" "${BARISTA_ROOT}/versions/21"
-  run barista-menu --skip-aliases --bare
-  assert_success
-  assert_line "21.0.3"
-  refute_line "21"
-}
