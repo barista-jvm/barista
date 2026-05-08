@@ -3,4 +3,7 @@
 # Usage: barista --version
 
 set -e
-echo "barista 0.1.0"
+
+BARISTA_DIR="${BARISTA_DIR:-${_BARISTA_INSTALL_PREFIX:-$(cd "$(dirname "$0")/.." && pwd)}}"
+version="$(cat "${BARISTA_DIR}/version.txt" 2>/dev/null | tr -d '[:space:]')"
+echo "barista ${version:-unknown}"

@@ -30,7 +30,8 @@ set -e
 export BARISTA_ROOT="${BARISTA_ROOT:-$HOME/.barista}"
 export BARISTA_DIR="${BARISTA_DIR:-${_BARISTA_INSTALL_PREFIX:-$(cd "$(dirname "$0")/.." && pwd)}}"
 
-BREW_VERSION="0.1.0"
+BREW_VERSION="$(cat "${BARISTA_DIR}/version.txt" 2>/dev/null | tr -d '[:space:]')"
+BREW_VERSION="${BREW_VERSION:-unknown}"
 
 list_only=""
 force=""
