@@ -8,7 +8,18 @@ Java version management, Barista-style.
 
 `barista` lets you switch between multiple JDK versions on a per-project or per-shell basis. It works by placing shim executables in front of your `PATH` and routing `java` , `javac` , and other JDK tools to the correct version based on a simple precedence chain.
 
+## Star History
+
+<a href="https://www.star-history.com/?repos=barista-jvm%2Fbarista&type=date&legend=bottom-right">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=barista-jvm/barista&type=date&theme=dark&legend=top-left" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=barista-jvm/barista&type=date&legend=top-left" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=barista-jvm/barista&type=date&legend=top-left" />
+ </picture>
+</a>
+
 - [Barista](#barista)
+  - [Star History](#star-history)
   - [How it works](#how-it-works)
   - [Installation](#installation)
   - [Shell compatibility](#shell-compatibility)
@@ -79,12 +90,12 @@ barista --version
 
 ## Shell compatibility
 
-| Shell | Minimum version | Notes |
-| ----- | --------------- | ----- |
+| Shell | Minimum version | Notes                                                     |
+| ----- | --------------- | --------------------------------------------------------- |
 | bash  | 3.2             | macOS ships with bash 3.2; bash 4.0+ recommended on Linux |
-| zsh   | 5.0             | |
-| fish  | 3.0             | Configure via `~/.config/fish/config.fish` |
-| ksh   | 93u+            | Falls through to the bash/zsh integration path |
+| zsh   | 5.0             |                                                           |
+| fish  | 3.0             | Configure via `~/.config/fish/config.fish`                |
+| ksh   | 93u+            | Falls through to the bash/zsh integration path            |
 
 All shells except fish use the same `eval "$(barista setup -)"` integration. See [`barista setup`](#barista-setup--print-shell-integration-code) for per-shell options.
 
