@@ -8,7 +8,10 @@ jobs:
       - checkout
       - run:
           name: Install bats
-          command: sudo apt-get install -y bats
+          command: |
+            git clone --depth 1 --branch v1.11.0 https://github.com/bats-core/bats-core.git /tmp/bats-core
+            sudo /tmp/bats-core/install.sh /usr/local
+            rm -rf /tmp/bats-core
       - run:
           name: Run tests
           command: make test
