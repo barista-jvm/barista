@@ -1,0 +1,29 @@
+version: 2.1
+
+jobs:
+  test:
+    docker:
+      - image: cimg/base:current
+    steps:
+      - checkout
+      - run:
+          name: Install bats
+          command: sudo apt-get install -y bats
+      - run:
+          name: Run tests
+          command: make test
+
+workflows:
+  on-commit:
+    jobs:
+      - test
+
+  nightly:
+    triggers:
+      - schedule:
+          cron: "0 0 * * *"
+          filters:
+            branches:
+              only: main
+    jobs:
+      - test
