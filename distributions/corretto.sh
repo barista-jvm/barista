@@ -18,6 +18,14 @@ dist_url() {
     "$DIST_BASE" "$feature_version" "$arch" "$cos"
 }
 
+dist_resolve_alias() {
+  case "$1" in
+  lts    ) echo "21" ;;
+  latest ) echo "24" ;;
+  *      ) printf 'barista: unknown alias: %s\n' "$1" >&2; return 1 ;;
+  esac
+}
+
 # Prints one version number per line, no headers or prose.
 dist_list() {
   printf '%s\n' 8 11 17 21 22 23 24

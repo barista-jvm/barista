@@ -39,6 +39,26 @@ dist_url() {
   printf '%s' "$url"
 }
 
+dist_resolve_alias() {
+  local alias="$1" bundles
+  case "$alias" in
+  latest )
+    dist_list 2>/dev/null | sort -n | tail -1
+    ;;
+  lts )
+    bundles="$(curl -sf "${DIST_API}/bundles/?bundle_type=jdk&ext=tar.gz&support_term=lts&os=linux&arch=x86_64")" || {
+      printf 'barista: failed to fetch Zulu LTS info\n' >&2
+      return 1
+    }
+    printf '%s' "$bundles" \
+      | grep -oE '"jdk_version":\[[0-9]+' \
+      | grep -oE '[0-9]+$' \
+      | sort -n | tail -1
+    ;;
+  * ) printf 'barista: unknown alias: %s\n' "$alias" >&2; return 1 ;;
+  esac
+}
+
 # Prints one version number per line, no headers or prose.
 dist_list() {
   local bundles

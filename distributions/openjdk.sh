@@ -50,6 +50,19 @@ dist_url() {
   printf '%s' "$url"
 }
 
+dist_resolve_alias() {
+  case "$1" in
+  latest )
+    dist_list 2>/dev/null | head -1 | awk -F. '{print $1}'
+    ;;
+  lts )
+    printf 'barista: OpenJDK (jdk.java.net) does not publish LTS releases\n' >&2
+    return 1
+    ;;
+  * ) printf 'barista: unknown alias: %s\n' "$1" >&2; return 1 ;;
+  esac
+}
+
 # Prints one version string per line (latest patch for each major), no prose.
 # Versions are scraped live from the archive page.
 dist_list() {

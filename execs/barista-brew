@@ -17,9 +17,15 @@
 # Custom distributions:   place a <name>.sh script in
 #                         $BARISTA_ROOT/distributions/
 #
+# Aliases:
+#   @lts     Resolves to the current LTS release for the distribution
+#   @latest  Resolves to the latest available release for the distribution
+#
 # Examples:
 #   barista brew --list
 #   barista brew adoptium@21
+#   barista brew adoptium@lts
+#   barista brew adoptium@latest
 #   barista brew corretto@21
 #   barista brew openjdk@17
 #   barista brew adoptium@21 --force
@@ -64,6 +70,43 @@ require_curl() {
     echo "barista: curl is required but not found in PATH" >&2
     exit 1
   fi
+}
+
+# Resolve 'lts' or 'latest' alias to a major version number.
+# Calls dist_resolve_alias() if the distribution defines it; otherwise falls
+# back to a numeric sort of dist_list() for @latest. @lts without a
+# dist_resolve_alias() implementation exits with an error.
+resolve_alias() {
+  local alias="$1" resolved
+  if command -v dist_resolve_alias >/dev/null 2>&1; then
+    resolved="$(dist_resolve_alias "$alias")"
+    if [ -z "$resolved" ]; then
+      echo "barista: @${alias} is not supported by distribution '${distribution}'" >&2
+      exit 1
+    fi
+    printf '%s' "$resolved"
+    return
+  fi
+  case "$alias" in
+  latest )
+    if command -v dist_list >/dev/null 2>&1; then
+      resolved="$(dist_list 2>/dev/null | grep -E '^[0-9]' | sort -t. -k1,1n | tail -1)"
+      if [ -z "$resolved" ]; then
+        echo "barista: could not resolve @latest for distribution '${distribution}'" >&2
+        exit 1
+      fi
+      printf '%s' "$resolved"
+    else
+      echo "barista: distribution '${distribution}' does not support @latest" >&2
+      exit 1
+    fi
+    ;;
+  lts )
+    echo "barista: distribution '${distribution}' does not support @lts" >&2
+    echo "        Add dist_resolve_alias() to the distribution script to enable it." >&2
+    exit 1
+    ;;
+  esac
 }
 
 # Resolve a partial version string to the latest matching full version from
@@ -189,6 +232,11 @@ fi
 
 require_curl
 load_distribution "$distribution"
+
+# Resolve lts/latest aliases to a concrete major version before partial resolution
+case "$version" in
+lts | latest ) version="$(resolve_alias "$version")" ;;
+esac
 
 # Resolve partial input to the latest matching full version, e.g. "25" → "25.0.3"
 version="$(resolve_version "$version")"
