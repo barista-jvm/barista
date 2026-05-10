@@ -169,3 +169,20 @@ create_checksum_dist() {
   assert_failure
   assert_line "barista: could not fetch checksum from file://${checkfile}"
 }
+
+# ---------------------------------------------------------------------------
+# Download retry
+# ---------------------------------------------------------------------------
+
+@test "curl download is invoked with --retry 3" {
+  # Stub curl records its arguments; barista-brew must pass --retry 3
+  local call_log="${BATS_TEST_TMPDIR}/curl_calls"
+  create_path_executable "curl" \
+    "printf '%s\n' \"\$@\" >> '${call_log}'" \
+    "exit 1"  # always fail so the test stays offline
+  create_stub_dist "stubdist"
+  run barista-brew stubdist@21
+  assert_failure
+  assert grep -qx -- "--retry" "$call_log"
+  assert grep -qx -- "3"       "$call_log"
+}

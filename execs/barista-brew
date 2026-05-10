@@ -275,7 +275,7 @@ trap 'rm -rf "$tmpdir"' EXIT
 archive="${tmpdir}/jdk.tar.gz"
 
 echo "==> Downloading..."
-if ! curl -L --progress-bar --fail -o "$archive" "$download_url"; then
+if ! curl -L --progress-bar --fail --retry 3 --retry-delay 2 -o "$archive" "$download_url"; then
   echo "barista: download failed" >&2
   echo "        URL: ${download_url}" >&2
   exit 1
