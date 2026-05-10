@@ -18,6 +18,14 @@ dist_url() {
     "$DIST_BASE" "$feature_version" "$arch" "$cos"
 }
 
+dist_checksum_url() {
+  local feature_version="$1" os="$2" arch="$3"
+  local cos
+  cos="$(_corretto_os "$os")"
+  printf '%s/amazon-corretto-%s-%s-%s-jdk.tar.gz.sha256' \
+    "$DIST_BASE" "$feature_version" "$arch" "$cos"
+}
+
 dist_resolve_alias() {
   case "$1" in
   lts    ) echo "21" ;;

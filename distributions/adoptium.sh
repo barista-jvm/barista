@@ -7,6 +7,12 @@ dist_url() {
     "$DIST_API" "$feature_version" "$os" "$arch"
 }
 
+dist_checksum_url() {
+  local feature_version="$1" os="$2" arch="$3"
+  printf '%s/checksum/latest/%s/ga/%s/%s/jdk/hotspot/normal/eclipse' \
+    "$DIST_API" "$feature_version" "$os" "$arch"
+}
+
 dist_resolve_alias() {
   local alias="$1" releases flat field
   releases="$(curl -sf "${DIST_API}/info/available_releases")" || {

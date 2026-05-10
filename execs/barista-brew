@@ -281,6 +281,33 @@ if ! curl -L --progress-bar --fail -o "$archive" "$download_url"; then
   exit 1
 fi
 
+if command -v dist_checksum_url >/dev/null 2>&1; then
+  checksum_url="$(dist_checksum_url "$feature_version" "$os" "$arch")"
+  if [ -n "$checksum_url" ]; then
+    echo "==> Verifying SHA256 checksum..."
+    expected_hash="$(curl -sf "$checksum_url" | grep -oE '[0-9a-f]{64}' | head -1)"
+    if [ -z "$expected_hash" ]; then
+      echo "barista: could not fetch checksum from ${checksum_url}" >&2
+      exit 1
+    fi
+    if command -v sha256sum >/dev/null 2>&1; then
+      actual_hash="$(sha256sum "$archive" | cut -d' ' -f1)"
+    elif command -v shasum >/dev/null 2>&1; then
+      actual_hash="$(shasum -a 256 "$archive" | cut -d' ' -f1)"
+    else
+      echo "barista: warning: no sha256 tool found; skipping checksum verification" >&2
+      actual_hash=""
+    fi
+    if [ -n "$actual_hash" ] && [ "$actual_hash" != "$expected_hash" ]; then
+      echo "barista: SHA256 checksum mismatch!" >&2
+      echo "        expected: ${expected_hash}" >&2
+      echo "        got:      ${actual_hash}" >&2
+      exit 1
+    fi
+    echo "    Checksum OK"
+  fi
+fi
+
 echo
 echo "==> Installing to ${install_dir} ..."
 
