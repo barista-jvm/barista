@@ -5,7 +5,7 @@ BATS_OPTS ?=
 # All .bats files under test/
 TESTS := $(wildcard $(TEST_DIR)/*.bats)
 
-.PHONY: test test-verbose test-tap check-bats
+.PHONY: test test-verbose test-tap test-coverage check-bats
 
 test: check-bats
 	$(BATS) $(BATS_OPTS) $(TESTS)
@@ -19,6 +19,23 @@ test-tap: check-bats
 # Run a single file: make test-file FILE=test/serving.bats
 test-file: check-bats
 	$(BATS) $(BATS_OPTS) $(FILE)
+
+# Report how many execs/ scripts have at least one matching .bats file.
+# Mapping: execs/barista-brew → test/brew.bats, execs/barista → test/barista.bats
+test-coverage:
+	@total=0; covered=0; \
+	for f in execs/barista execs/barista-*; do \
+	  base=$$(basename "$$f"); \
+	  name=$${base#barista}; name=$${name#-}; \
+	  [ -z "$$name" ] && name="barista"; \
+	  total=$$((total + 1)); \
+	  if [ -f "$(TEST_DIR)/$$name.bats" ]; then \
+	    covered=$$((covered + 1)); \
+	  else \
+	    printf '  uncovered: %s  (%s)\n' "$$name" "$$f"; \
+	  fi; \
+	done; \
+	echo "Coverage: $$covered/$$total execs have a .bats file"
 
 check-bats:
 	@command -v $(BATS) >/dev/null 2>&1 || { \
