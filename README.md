@@ -23,6 +23,7 @@ Java version management, Barista-style.
   - [How it works](#how-it-works)
   - [Installation](#installation)
   - [Shell compatibility](#shell-compatibility)
+  - [Tab completion](#tab-completion)
   - [Commands](#commands)
     - [`barista brew` — install a Java version](#barista-brew--install-a-java-version)
     - [`barista discard` — uninstall a Java version](#barista-discard--uninstall-a-java-version)
@@ -98,6 +99,47 @@ barista --version
 | ksh   | 93u+            | Falls through to the bash/zsh integration path            |
 
 All shells except fish use the same `eval "$(barista setup -)"` integration. See [`barista setup`](#barista-setup--print-shell-integration-code) for per-shell options.
+
+---
+
+## Tab completion
+
+Barista ships completion scripts for bash, zsh, and fish under `completions/`. They are activated automatically by `barista setup` — no extra steps needed if you already have the standard shell integration in place.
+
+**What gets completed**
+
+| Context                       | Completions offered                            |
+| ----------------------------- | ---------------------------------------------- |
+| `barista <TAB>`               | All subcommands                                |
+| `barista house <TAB>`         | Installed versions + `system`                  |
+| `barista table <TAB>`         | Installed versions + `system`                  |
+| `barista discard <TAB>`       | Installed versions                             |
+| `barista brew <TAB>`          | Distribution names (`adoptium`, `corretto`, …) |
+| `barista brew adoptium@<TAB>` | `adoptium@lts`, `adoptium@latest`              |
+
+**Bash and zsh** — activated automatically by `eval "$(barista setup -)"`. For zsh the completions directory is added to `$fpath`; call `compinit` after the eval line (the common default):
+
+```zsh
+# ~/.zshrc
+eval "$(barista setup -)"
+autoload -Uz compinit && compinit
+```
+
+**Fish** — activated automatically by `barista setup fish | source`, which adds the completions directory to `$fish_complete_path`.
+
+**Manual installation** (if you manage completions separately):
+
+```bash
+# bash — source the script once, e.g. from ~/.bash_completion.d/
+. /path/to/barista/completions/barista.bash
+
+# zsh — add to fpath before compinit
+fpath=(/path/to/barista/completions $fpath)
+
+# fish — copy or symlink into your completions directory
+ln -sf /path/to/barista/completions/barista.fish \
+       ~/.config/fish/completions/barista.fish
+```
 
 ---
 

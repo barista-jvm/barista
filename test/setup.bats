@@ -72,9 +72,30 @@ load test_helper
   refute_line "barista() {"
 }
 
-@test "zsh output is identical to bash output" {
+@test "bash setup sources the bash completion script" {
   run barista-setup bash
-  local bash_out="$output"
+  assert_success
+  assert_line ". \"${BARISTA_DIR}/completions/barista.bash\""
+}
+
+@test "zsh setup adds completions directory to fpath" {
   run barista-setup zsh
-  assert_equal "$bash_out" "$output"
+  assert_success
+  assert_line "fpath=(\"${BARISTA_DIR}/completions\" \$fpath)"
+}
+
+@test "fish setup adds completions directory to fish_complete_path" {
+  run barista-setup fish
+  assert_success
+  assert_line "set -gx fish_complete_path \"${BARISTA_DIR}/completions\" \$fish_complete_path"
+}
+
+@test "zsh shell function is identical to bash shell function" {
+  run barista-setup bash
+  local bash_func
+  bash_func="$(printf '%s\n' "${lines[@]}" | grep -A5 'barista() {')"
+  run barista-setup zsh
+  local zsh_func
+  zsh_func="$(printf '%s\n' "${lines[@]}" | grep -A5 'barista() {')"
+  assert_equal "$bash_func" "$zsh_func"
 }

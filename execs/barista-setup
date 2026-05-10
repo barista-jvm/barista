@@ -81,6 +81,7 @@ FISH
   if [ -z "$no_rehash" ]; then
     echo "command barista restock 2>/dev/null; or true"
   fi
+  echo "set -gx fish_complete_path \"${BARISTA_DIR}/completions\" \$fish_complete_path"
   ;;
 * )
   cat <<'SH'
@@ -99,5 +100,9 @@ SH
   if [ -z "$no_rehash" ]; then
     echo "command barista restock 2>/dev/null || true"
   fi
+  case "$shell_name" in
+  zsh  ) echo "fpath=(\"${BARISTA_DIR}/completions\" \$fpath)" ;;
+  bash ) echo ". \"${BARISTA_DIR}/completions/barista.bash\"" ;;
+  esac
   ;;
 esac

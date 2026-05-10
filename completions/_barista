@@ -1,0 +1,60 @@
+#compdef barista
+
+_barista() {
+  local cur="${words[CURRENT]}"
+
+  if (( CURRENT == 2 )); then
+    local subcommands=(
+      'brew:Install a Java version'
+      'commands:List available commands'
+      'counter:Show the active Java version number'
+      'discard:Uninstall a Java version'
+      'help:Show help'
+      'house:Set or show the global Java version'
+      'menu:List installed Java versions'
+      'origin:Show where the active version is set'
+      'pantry:Show the barista root directory'
+      'pour:Run a command with the active Java version'
+      'restock:Rebuild shims'
+      'serving:Show the active Java version'
+      'setup:Configure shell integration'
+      'table:Set or show the local Java version'
+      'version-file:Find the .java-version file for the current directory'
+    )
+    _describe 'subcommand' subcommands
+    return
+  fi
+
+  local subcmd="${words[2]}"
+  case $subcmd in
+  house | table | discard )
+    local versions
+    versions=(${(f)"$(barista menu --bare 2>/dev/null)"} system)
+    _describe 'installed version' versions
+    ;;
+  brew )
+    case $cur in
+    *@* )
+      local dist="${cur%%@*}"
+      compadd -- "${dist}@lts" "${dist}@latest"
+      ;;
+    * )
+      local barista_dir="${BARISTA_DIR:-${${commands[barista]:h}:h}}"
+      local user_dir="${BARISTA_ROOT:-$HOME/.barista}/distributions"
+      local builtin_dir="${barista_dir}/distributions"
+      local dists=()
+      for dir in "$builtin_dir" "$user_dir"; do
+        [[ -d "$dir" ]] || continue
+        for f in "$dir"/*.sh(N); do
+          dists+=("${f:t:r}")
+        done
+      done
+      dists=(${(u)dists})
+      compadd -S '@' -- $dists
+      ;;
+    esac
+    ;;
+  esac
+}
+
+_barista "$@"
