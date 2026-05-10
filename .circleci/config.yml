@@ -17,10 +17,6 @@ jobs:
           command: make test
 
 workflows:
-  on-commit:
-    jobs:
-      - test
-
   nightly:
     triggers:
       - schedule:
